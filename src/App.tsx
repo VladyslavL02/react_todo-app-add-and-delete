@@ -129,10 +129,6 @@ export const App: React.FC = () => {
       return false;
     }
 
-    if (errorMessage !== defaultState.errorMessage) {
-      handleErrorMessageRemoval();
-    }
-
     setDisabledInput(true);
 
     setTempTodo({ id: 0, title: inputValue });
@@ -142,7 +138,7 @@ export const App: React.FC = () => {
     await postTodo(inputValue)
       .then(newTodo => {
         setTodos(currentTodos => [...currentTodos, newTodo]);
-
+        handleErrorMessageRemoval();
         result = true;
       })
       .catch(() => {
@@ -201,6 +197,7 @@ export const App: React.FC = () => {
     });
 
     setTodos(() => filterDeletedTodos);
+    setFormFocus(true);
   };
 
   return (
@@ -255,16 +252,16 @@ export const App: React.FC = () => {
             />
 
             {/* this button should be disabled if there are no completed todos */}
-            {completedTodosAvailabitily && (
-              <button
-                type="button"
-                className="todoapp__clear-completed"
-                data-cy="ClearCompletedButton"
-                onClick={handleCompletedTodosDeletion}
-              >
-                Clear completed
-              </button>
-            )}
+
+            <button
+              type="button"
+              className="todoapp__clear-completed"
+              data-cy="ClearCompletedButton"
+              onClick={handleCompletedTodosDeletion}
+              disabled={!completedTodosAvailabitily}
+            >
+              Clear completed
+            </button>
           </footer>
         )}
       </div>

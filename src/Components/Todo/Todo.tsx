@@ -22,8 +22,19 @@ export const Todo: React.FC<Props> = ({
   activeTodos,
 }) => {
   const [active, setActive] = useState(isActive);
+  const [activeSingleDeletion, setActiveSingleDeletion] = useState(false);
 
   useEffect(() => {
+    if (activeSingleDeletion) {
+      return;
+    }
+
+    if (isActive) {
+      setActive(true);
+
+      return;
+    }
+
     if (activeTodos.includes(todoId)) {
       setActive(true);
     }
@@ -31,10 +42,11 @@ export const Todo: React.FC<Props> = ({
     if (activeTodos.length === 0 && active) {
       setActive(false);
     }
-  }, [activeTodos, todoId]);
+  }, [activeTodos, todoId, active, activeSingleDeletion, isActive]);
 
   const onTodoDeletion = () => {
     setActive(true);
+    setActiveSingleDeletion(true);
 
     deleteTodo(todoId)
       .then(() => {
@@ -42,6 +54,7 @@ export const Todo: React.FC<Props> = ({
       })
       .catch(() => {
         setActive(false);
+        setActiveSingleDeletion(false);
         handleTodoDeletion?.(false);
       });
   };

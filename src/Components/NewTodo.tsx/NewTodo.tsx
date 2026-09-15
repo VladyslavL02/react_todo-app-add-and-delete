@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Props = {
   disableInput: boolean;
@@ -13,12 +13,11 @@ export const NewTodo: React.FC<Props> = ({
   formFocus,
   setFormFocus,
 }) => {
+  const [title, setTitle] = useState('');
   const inputElement = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // setTimeout(() => {
     inputElement.current?.focus();
-    // }, 0);
   }, [formFocus]);
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -30,13 +29,13 @@ export const NewTodo: React.FC<Props> = ({
 
     let successfullCompletion;
 
-    await handleNewTodo(inputElement.current.value.trim()).then(
+    await handleNewTodo(title.trim()).then(
       value => (successfullCompletion = value),
     );
 
     if (successfullCompletion) {
       if (inputElement.current) {
-        inputElement.current.value = '';
+        setTitle('');
       }
     }
 
@@ -52,7 +51,9 @@ export const NewTodo: React.FC<Props> = ({
         className="todoapp__new-todo"
         placeholder="What needs to be done?"
         autoFocus
+        value={title}
         disabled={disableInput}
+        onChange={event => setTitle(event.target.value)}
       />
     </form>
   );
