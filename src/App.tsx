@@ -27,6 +27,9 @@ const defaultState = {
   selectedFilter: DefaultFilter.All,
   disableInput: false,
   tempTodo: null,
+  completedTodosAvailabitily: false,
+  formFocus: false,
+  todosToDelete: [],
 };
 
 type TempTodo = {
@@ -51,24 +54,28 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>(
     defaultState.errorMessage,
   );
-  const timerId = useRef<ReturnType<typeof setTimeout>>();
   const [selectedFilter, setSelectedFilter] = useState<DefaultFilter>(
     defaultState.selectedFilter,
   );
-  const activeTodosCount = todos.filter(todo => !todo.completed).length;
   const [disabledInput, setDisabledInput] = useState(defaultState.disableInput);
   const [tempTodo, setTempTodo] = useState<TempTodo | null>(
     defaultState.tempTodo,
   );
   const [completedTodosAvailabitily, setCompletedTodosAvailability] =
-    useState<boolean>(false);
-  const [formFocus, setFormFocus] = useState(false);
-  const [todosToDelete, setTodosToDelete] = useState<number[]>([]);
+    useState<boolean>(defaultState.completedTodosAvailabitily);
+  const [formFocus, setFormFocus] = useState(defaultState.formFocus);
+  const [todosToDelete, setTodosToDelete] = useState<number[]>(
+    defaultState.todosToDelete,
+  );
+
+  const timerId = useRef<ReturnType<typeof setTimeout>>();
 
   const filteredTodos = useMemo(
     () => getVisibleTodos(selectedFilter, todos),
     [selectedFilter, todos],
   );
+
+  const activeTodosCount = todos.filter(todo => !todo.completed).length;
 
   useEffect(() => {
     const atLeastOneTodoCompleted = todos.some(todo => todo.completed === true);
@@ -142,21 +149,31 @@ export const App: React.FC = () => {
         showError(errorMessageOptions.newTodo);
       })
       .finally(() => {
-        setDisabledInput(false);
+        setDisabledInput(defaultState.disableInput);
         setTempTodo(defaultState.tempTodo);
       });
 
     return result;
   };
 
-  const handleTodoDeletion = (status: boolean, todoId?: number) => {
-    if (!status) {
+  const handleTodoDeletion = (
+    statusOrId: boolean | number,
+    idParam?: number,
+  ) => {
+    const isFailed = typeof statusOrId === 'boolean' && !statusOrId;
+
+    if (isFailed) {
       showError(errorMessageOptions.deleteTodo);
 
       return;
     }
 
-    setTodos(currentTodos => currentTodos.filter(todo => todo.id !== todoId));
+    const todoId = typeof statusOrId === 'number' ? statusOrId : idParam;
+
+    if (todoId !== undefined) {
+      setTodos(currentTodos => currentTodos.filter(todo => todo.id !== todoId));
+    }
+
     setFormFocus(currentValue => !currentValue);
   };
 
