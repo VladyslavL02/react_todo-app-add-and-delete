@@ -156,19 +156,12 @@ export const App: React.FC = () => {
     return result;
   };
 
-  const handleTodoDeletion = (
-    statusOrId: boolean | number,
-    idParam?: number,
-  ) => {
-    const isFailed = typeof statusOrId === 'boolean' && !statusOrId;
-
-    if (isFailed) {
+  const handleTodoDeletion = (status: boolean, todoId?: number) => {
+    if (status) {
       showError(errorMessageOptions.deleteTodo);
 
       return;
     }
-
-    const todoId = typeof statusOrId === 'number' ? statusOrId : idParam;
 
     if (todoId !== undefined) {
       setTodos(currentTodos => currentTodos.filter(todo => todo.id !== todoId));
