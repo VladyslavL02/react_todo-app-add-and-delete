@@ -157,7 +157,7 @@ export const App: React.FC = () => {
   };
 
   const handleTodoDeletion = (status: boolean, todoId?: number) => {
-    if (status) {
+    if (!status) {
       showError(errorMessageOptions.deleteTodo);
 
       return;
