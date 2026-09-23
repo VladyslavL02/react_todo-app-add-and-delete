@@ -4,13 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 // import { UserWarning } from './UserWarning';
 import { deleteTodo, getTodos, postTodo, USER_ID } from './api/todos';
 import { Todo as TodoType } from './types/Todo';
-import cn from 'classnames';
 import { Filter } from './Components/Filter/Filter';
 import { DefaultFilter } from './types/DefaultFilter';
 import { TodoList } from './Components/TodoList/TodoList';
 import { NewTodo } from './Components/NewTodo.tsx/NewTodo';
 import { UserWarning } from './UserWarning';
 import { Todo } from './Components/Todo/Todo';
+// eslint-disable-next-line max-len
+import { ErrorNotification } from './Components/ErrorNotification';
 
 const errorMessageOptions = {
   loadTodos: 'Unable to load todos',
@@ -18,18 +19,6 @@ const errorMessageOptions = {
   newTodo: 'Unable to add a todo',
   deleteTodo: 'Unable to delete a todo',
   updateTodo: 'Unable to update a todo',
-};
-
-const defaultState = {
-  todos: [],
-  errorMessage: '',
-  filteredTodos: [],
-  selectedFilter: DefaultFilter.All,
-  disableInput: false,
-  tempTodo: null,
-  completedTodosAvailabitily: false,
-  formFocus: false,
-  todosToDelete: [],
 };
 
 type TempTodo = {
@@ -50,23 +39,15 @@ function getVisibleTodos(selectedFilter: DefaultFilter, todos: TodoType[]) {
 }
 
 export const App: React.FC = () => {
-  const [todos, setTodos] = useState<TodoType[]>(defaultState.todos);
-  const [errorMessage, setErrorMessage] = useState<string>(
-    defaultState.errorMessage,
-  );
+  const [todos, setTodos] = useState<TodoType[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [selectedFilter, setSelectedFilter] = useState<DefaultFilter>(
-    defaultState.selectedFilter,
+    DefaultFilter.All,
   );
-  const [disabledInput, setDisabledInput] = useState(defaultState.disableInput);
-  const [tempTodo, setTempTodo] = useState<TempTodo | null>(
-    defaultState.tempTodo,
-  );
-  const [completedTodosAvailabitily, setCompletedTodosAvailability] =
-    useState<boolean>(defaultState.completedTodosAvailabitily);
-  const [formFocus, setFormFocus] = useState(defaultState.formFocus);
-  const [todosToDelete, setTodosToDelete] = useState<number[]>(
-    defaultState.todosToDelete,
-  );
+  const [disabledInput, setDisabledInput] = useState(false);
+  const [tempTodo, setTempTodo] = useState<TempTodo | null>(null);
+  const formFocus = useRef(false);
+  const [todosToDelete, setTodosToDelete] = useState<number[]>([]);
 
   const timerId = useRef<ReturnType<typeof setTimeout>>();
 
@@ -77,17 +58,9 @@ export const App: React.FC = () => {
 
   const activeTodosCount = todos.filter(todo => !todo.completed).length;
 
-  useEffect(() => {
-    const atLeastOneTodoCompleted = todos.some(todo => todo.completed === true);
-
-    setCompletedTodosAvailability(previousValue => {
-      if (previousValue !== atLeastOneTodoCompleted) {
-        return atLeastOneTodoCompleted;
-      }
-
-      return previousValue;
-    });
-  }, [todos]);
+  const completedTodosAvailability = todos.some(
+    todo => todo.completed === true,
+  );
 
   useEffect(() => {
     getTodos()
@@ -97,15 +70,15 @@ export const App: React.FC = () => {
 
   const handleErrorMessageRemoval = () => {
     clearTimeout(timerId.current);
-    setErrorMessage(defaultState.errorMessage);
+    setErrorMessage('');
   };
 
   useEffect(() => {
-    if (errorMessage !== defaultState.errorMessage) {
+    if (errorMessage !== '') {
       clearTimeout(timerId.current);
 
       timerId.current = setTimeout(() => {
-        setErrorMessage(defaultState.errorMessage);
+        setErrorMessage('');
       }, 3000);
     }
   }, [errorMessage]);
@@ -119,7 +92,7 @@ export const App: React.FC = () => {
       clearTimeout(timerId.current);
 
       timerId.current = setTimeout(() => {
-        setErrorMessage(defaultState.errorMessage);
+        setErrorMessage('');
       }, 3000);
     }
 
@@ -149,8 +122,8 @@ export const App: React.FC = () => {
         showError(errorMessageOptions.newTodo);
       })
       .finally(() => {
-        setDisabledInput(defaultState.disableInput);
-        setTempTodo(defaultState.tempTodo);
+        setDisabledInput(false);
+        setTempTodo(null);
       });
 
     return result;
@@ -167,18 +140,12 @@ export const App: React.FC = () => {
       setTodos(currentTodos => currentTodos.filter(todo => todo.id !== todoId));
     }
 
-    setFormFocus(currentValue => !currentValue);
+    formFocus.current = !formFocus.current;
   };
 
   const handleCompletedTodosDeletion = async () => {
     const todosToDeleteIds = todos
-      .filter(todo => {
-        if (todo.completed === true) {
-          return true;
-        }
-
-        return false;
-      })
+      .filter(todo => todo.completed)
       .map(todo => todo.id);
 
     setTodosToDelete(todosToDeleteIds);
@@ -204,7 +171,7 @@ export const App: React.FC = () => {
     });
 
     setTodos(() => filterDeletedTodos);
-    setFormFocus(true);
+    formFocus.current = true;
   };
 
   return (
@@ -224,8 +191,8 @@ export const App: React.FC = () => {
           <NewTodo
             handleNewTodo={handleNewTodo}
             disableInput={disabledInput}
-            formFocus={formFocus}
-            setFormFocus={() => setFormFocus(currentValue => !currentValue)}
+            formFocus={formFocus.current}
+            setFormFocus={() => (formFocus.current = !formFocus.current)}
           />
         </header>
         {todos.length > 0 && (
@@ -265,7 +232,7 @@ export const App: React.FC = () => {
               className="todoapp__clear-completed"
               data-cy="ClearCompletedButton"
               onClick={handleCompletedTodosDeletion}
-              disabled={!completedTodosAvailabitily}
+              disabled={!completedTodosAvailability}
             >
               Clear completed
             </button>
@@ -275,21 +242,10 @@ export const App: React.FC = () => {
 
       {/* DON'T use conditional rendering to hide the notification */}
       {/* Add the 'hidden' class to hide the message smoothly */}
-      <div
-        data-cy="ErrorNotification"
-        className={cn(
-          'notification is-danger is-light has-text-weight-normal',
-          { hidden: errorMessage === '' },
-        )}
-      >
-        <button
-          data-cy="HideErrorButton"
-          type="button"
-          className="delete"
-          onClick={handleErrorMessageRemoval}
-        />
-        {errorMessage}
-      </div>
+      <ErrorNotification
+        errorMessage={errorMessage}
+        handleErrorRemoval={handleErrorMessageRemoval}
+      />
     </div>
   );
 };
